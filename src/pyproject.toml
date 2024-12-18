@@ -13,6 +13,7 @@ dependencies = [
     "plotly>=5.24.1",
     "polars>=1.8.2",
     "seaborn>=0.13.2",
+    "tqdm>=4.67.1",
 ]
 
 # To allow the project to be installed into the environment
