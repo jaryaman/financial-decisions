@@ -20,3 +20,20 @@ def draw_lognormal_return(mean_return=0.09, stdev=0.20, n_sims=1):
     X = np.random.normal(loc=mu_log, scale=sigma_log, size=n_sims)
     R = np.exp(X) - 1.0
     return R
+
+
+def risk_adjusted_excess_return(
+    expected_excess_return: float,
+    std_dev_return: float,
+    gamma: float,
+    frac_risky_assert: float,
+):
+    return (
+        frac_risky_assert * expected_excess_return
+        - gamma * (frac_risky_assert * std_dev_return) ** 2 / 2
+    )
+
+
+def merton_share(expected_excess_return: float, gamma: float, std_dev_return: float):
+    """Optimal bet size on risky asset"""
+    return expected_excess_return / (gamma * std_dev_return**2)
