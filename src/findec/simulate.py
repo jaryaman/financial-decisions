@@ -6,7 +6,7 @@ from findec.utility import crra_utility
 from findec.utility import wealth_to_gamma, bequest_utility
 from findec.policy import policy
 from findec.dataclasses import Preferences, Assets, State
-from findec.returns import RiskyAsset
+from findec.returns import RiskyAsset, DistributionType
 from findec.survival import (
     age_to_death_probability_female,
     age_to_death_probability_male,
@@ -40,6 +40,7 @@ def simulate_life_path(
     starting_age: int = 65,
     is_male: bool = False,
     with_survival_probabilities: bool = True,
+    returns_distribution_type: DistributionType = DistributionType.NORMAL,
 ) -> dict[int, State]:
     if rng_seed_offset is not None and rng_seed is not None:
         np.random.seed(rng_seed_offset + rng_seed)
@@ -53,6 +54,7 @@ def simulate_life_path(
         expected_excess_return=expected_excess_return,
         standard_deviation=std_dev_return_risky,
         risk_free_rate=risk_free_rate,
+        distribution_type=returns_distribution_type,
     )
 
     total_utility = 0.0
