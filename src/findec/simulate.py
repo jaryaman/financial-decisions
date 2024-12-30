@@ -1,4 +1,5 @@
 import numpy as np
+import polars as pl
 
 from findec.utility import crra_utility
 from findec.utility import wealth_to_gamma, bequest_utility
@@ -9,6 +10,15 @@ from findec.survival import (
     age_to_death_probability_female,
     age_to_death_probability_male,
 )
+from tqdm import tqdm
+
+
+def simulate_life_paths(*args, n_sims: int, **kwargs) -> pl.DataFrame:
+    for i in tqdm(range(n_sims)):
+        states = simulate_life_path(*args, **kwargs)
+        df = pl.DataFrame([s.as_dict() for s in states.values()])
+        df = df.with_columns(pl.lit(i, dtype=pl.Int64()).alias("run_number"))
+    return df
 
 
 def simulate_life_path(
@@ -23,7 +33,7 @@ def simulate_life_path(
     rng_seed: int | None = None,
     starting_age: int = 65,
     is_male: bool = False,
-    with_survival_probabilities: bool = True
+    with_survival_probabilities: bool = True,
 ) -> dict[int, State]:
     if rng_seed is not None:
         np.random.seed(rng_seed)
@@ -64,7 +74,10 @@ def simulate_life_path(
             gamma_above_subsistence=pref.gamma_above_subsistence,
         )
 
-        if with_survival_probabilities and np.random.rand() < age_to_death_probability[age]:
+        if (
+            with_survival_probabilities
+            and np.random.rand() < age_to_death_probability[age]
+        ):
             alive = False
             bu = bequest_utility(a.total_wealth, b=pref.bequest_param, gamma=gamma)
             total_utility += bu
