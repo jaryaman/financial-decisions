@@ -75,8 +75,6 @@ def simulate_life_path(
 
     for t in range(1, time_horizon + 1):
         age = starting_age + t
-        if age == 85:
-            assert True
         gamma = wealth_to_gamma(
             a.total_wealth,
             subsistence=pref.subsistence,
