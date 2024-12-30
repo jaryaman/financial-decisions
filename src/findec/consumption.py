@@ -13,4 +13,7 @@ def optimal_consumption_finite_horizon(
     c_infty = optimal_consumption_infinite_horizon(
         return_risk_adjusted, rate_time_preference, gamma
     )
-    return c_infty / (1 - (1 + c_infty) ** (-time_horizon))
+    try:
+        return c_infty / (1 - (1 + c_infty) ** (-time_horizon))
+    except ZeroDivisionError as e:
+        raise e

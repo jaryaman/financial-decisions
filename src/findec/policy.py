@@ -1,6 +1,6 @@
 from findec.consumption import optimal_consumption_finite_horizon
-from findec.returns import risk_adjusted_excess_return
-from findec.dataclasses import Preferences, Policy, RiskyAsset
+from findec.returns import risk_adjusted_excess_return, RiskyAsset
+from findec.dataclasses import Preferences, Policy
 
 
 def merton_share(*, expected_excess_return: float, gamma: float, std_dev_return: float):
