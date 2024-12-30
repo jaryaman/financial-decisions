@@ -28,9 +28,14 @@ def certainty_equivalent_return(
     return certainty_equivalent_return
 
 
-def get_matching_utility(*, subsistence: float, gamma: float, gamma_low: float):
-    return crra_utility(subsistence, gamma=gamma) - crra_utility(
-        subsistence, gamma=gamma_low
+def get_matching_utility(
+    *,
+    subsistence: float,
+    gamma_above_subsistence: float,
+    gamma_below_subsistence: float,
+):
+    return crra_utility(subsistence, gamma=gamma_above_subsistence) - crra_utility(
+        subsistence, gamma=gamma_below_subsistence
     )
 
 
@@ -48,26 +53,25 @@ def composite_crra_utility(
     """
     if matching_utility is None:
         matching_utility = get_matching_utility(
-            subsistence=pref.subsistence, gamma=pref.gamma, gamma_low=pref.gamma_low
+            subsistence=pref.subsistence,
+            gamma_above_subsistence=pref.gamma_above_subsistence,
+            gamma_below_subsistence=pref.gamma_below_subsistence,
         )
     if w < pref.w_floor:
-        return crra_utility(pref.w_floor, gamma=pref.gamma_low) + matching_utility
+        return (
+            crra_utility(pref.w_floor, gamma=pref.gamma_below_subsistence)
+            + matching_utility
+        )
 
     if w < pref.subsistence:
-        return crra_utility(w, gamma=pref.gamma_low) + matching_utility
+        return crra_utility(w, gamma=pref.gamma_below_subsistence) + matching_utility
     else:
-        return crra_utility(w, gamma=pref.gamma)
+        return crra_utility(w, gamma=pref.gamma_above_subsistence)
 
 
 def bequest_utility(wealth, b=10, gamma=2.0):
-    """
-    U(Bequest) =  b * [ 1 - (W/b)^(1 - gamma ) ] / (gamma - 1)
-    for example gamma=2, b=10, etc.
-    """
     if wealth <= 0:
         return 0.0  # or negative utility, but typically 0 is fine if no wealth
-    # If gamma=2 => b * [1 - (W/b)^(-1)] / (1)
-    # More general:
     return b * (1 - (wealth / b) ** (1 - gamma)) / (gamma - 1)
 
 

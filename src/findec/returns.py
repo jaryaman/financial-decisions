@@ -26,14 +26,10 @@ def risk_adjusted_excess_return(
     expected_excess_return: float,
     std_dev_return: float,
     gamma: float,
-    frac_risky_assert: float,
+    frac_risky_asset: float,
 ):
+    """Page 87 of Haghani & White"""
     return (
-        frac_risky_assert * expected_excess_return
-        - gamma * (frac_risky_assert * std_dev_return) ** 2 / 2
+        frac_risky_asset * expected_excess_return
+        - gamma * (frac_risky_asset * std_dev_return) ** 2 / 2
     )
-
-
-def merton_share(expected_excess_return: float, gamma: float, std_dev_return: float):
-    """Optimal bet size on risky asset"""
-    return expected_excess_return / (gamma * std_dev_return**2)
