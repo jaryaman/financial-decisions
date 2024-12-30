@@ -59,6 +59,8 @@ class State:
     consumption: float | None
     consumption_fraction: float | None
     total_utility: float
+    annual_utility: float | None
+    bequest: float | None
 
     def as_dict(self):
         return asdict(self)

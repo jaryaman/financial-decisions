@@ -68,11 +68,15 @@ def simulate_life_path(
             consumption=None,
             consumption_fraction=None,
             risky_return=None,
+            annual_utility=None,
+            bequest=None,
         )
     }
 
     for t in range(1, time_horizon + 1):
         age = starting_age + t
+        if age == 85:
+            assert True
         gamma = wealth_to_gamma(
             a.total_wealth,
             subsistence=pref.subsistence,
@@ -96,6 +100,8 @@ def simulate_life_path(
                 consumption=None,
                 consumption_fraction=None,
                 risky_return=None,
+                annual_utility=bu,
+                bequest=a.total_wealth,
             )
             break
 
@@ -105,6 +111,7 @@ def simulate_life_path(
         # 2) Decide policy
         pol = policy(
             time_horizon=time_horizon - t + 1,
+            bequest_param=pref.bequest_param,
             gamma=gamma,
             pref=pref,
             risk_free_rate=risk_free_rate,
@@ -151,6 +158,8 @@ def simulate_life_path(
             consumption=consumption_from_portfolio,
             consumption_fraction=pol.consumption_fraction,
             risky_return=risky_returns,
+            annual_utility=discounted_utility_of_consumption,
+            bequest=None,
         )
         # End of year. Next loop.
 
@@ -165,9 +174,11 @@ def simulate_life_path(
             total_utility=total_utility,
             alive=alive,
             age=age,
-            consumption=None,
-            consumption_fraction=None,
-            risky_return=None,
+            consumption=consumption_from_portfolio,
+            consumption_fraction=pol.consumption_fraction,
+            risky_return=risky_returns,
+            annual_utility=bu + discounted_utility_of_consumption,
+            bequest=a.total_wealth,
         )
 
     return states

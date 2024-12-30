@@ -15,6 +15,7 @@ def policy(
     pref: Preferences,
     risk_free_rate: float,
     risky_asset: RiskyAsset,
+    bequest_param: float | None,
 ) -> Policy:
     risky_asset_fraction_allocation = merton_share(
         expected_excess_return=risky_asset.expected_excess_return,
@@ -34,6 +35,7 @@ def policy(
         rate_time_preference=pref.rate_time_preference,
         gamma=gamma,
         time_horizon=time_horizon,
+        bequest_param=bequest_param,
     )
 
     return Policy(
