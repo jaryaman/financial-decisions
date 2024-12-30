@@ -14,11 +14,13 @@ from tqdm import tqdm
 
 
 def simulate_life_paths(*args, n_sims: int, **kwargs) -> pl.DataFrame:
+    dfs = []
     for i in tqdm(range(n_sims)):
         states = simulate_life_path(*args, **kwargs)
         df = pl.DataFrame([s.as_dict() for s in states.values()])
         df = df.with_columns(pl.lit(i, dtype=pl.Int64()).alias("run_number"))
-    return df
+        dfs.append(df)
+    return pl.concat(dfs)
 
 
 def simulate_life_path(
