@@ -1,5 +1,6 @@
 import numpy as np
 import polars as pl
+import copy
 
 from findec.utility import crra_utility
 from findec.utility import wealth_to_gamma, bequest_utility
@@ -16,9 +17,11 @@ from tqdm import tqdm
 def simulate_life_paths(*args, n_sims: int, **kwargs) -> pl.DataFrame:
     dfs = []
     for i in tqdm(range(n_sims)):
-        states = simulate_life_path(*args, **kwargs)
+        copied_args = copy.deepcopy(args)
+        copied_kwargs = copy.deepcopy(kwargs)
+        states = simulate_life_path(rng_seed=i, *copied_args, **copied_kwargs)
         df = pl.DataFrame([s.as_dict() for s in states.values()])
-        df = df.with_columns(pl.lit(i, dtype=pl.Int64()).alias("run_number"))
+        df = df.with_columns(pl.lit(i, dtype=pl.Utf8()).alias("run_number"))
         dfs.append(df)
     return pl.concat(dfs)
 
@@ -33,12 +36,13 @@ def simulate_life_path(
     social_security: float,
     time_horizon: int,  # maximum number of years we will live from current age. Can set this to very large numbers.
     rng_seed: int | None = None,
+    rng_seed_offset: int | None = None,
     starting_age: int = 65,
     is_male: bool = False,
     with_survival_probabilities: bool = True,
 ) -> dict[int, State]:
-    if rng_seed is not None:
-        np.random.seed(rng_seed)
+    if rng_seed_offset is not None and rng_seed is not None:
+        np.random.seed(rng_seed_offset + rng_seed)
     if is_male:
         age_to_death_probability = age_to_death_probability_male
     else:
