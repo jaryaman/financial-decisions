@@ -26,8 +26,8 @@ class RiskyAsset:
 
 @dataclass
 class Assets:
-    tax_free: float = 400_000.0
-    taxable: float = 600_000.0
+    tax_free: float
+    taxable: float
 
     @property
     def total_wealth(self):
