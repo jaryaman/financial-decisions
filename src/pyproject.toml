@@ -13,9 +13,11 @@ dependencies = [
     "pandas>=2.0.3",
     "plotly>=5.24.1",
     "polars>=1.8.2",
+    "pyarrow>=18.1.0",
     "scipy>=1.14.1",
     "seaborn>=0.13.2",
     "tqdm>=4.67.1",
+    "types-tqdm>=4.67.0.20241221",
 ]
 
 # To allow the project to be installed into the environment
