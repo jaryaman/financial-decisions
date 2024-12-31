@@ -10,6 +10,8 @@ from findec.returns import RiskyAsset, DistributionType
 from findec.survival import (
     age_to_death_probability_female,
     age_to_death_probability_male,
+    age_to_life_expectancy_male,
+    age_to_life_expectancy_female,
 )
 from tqdm import tqdm
 
@@ -30,25 +32,27 @@ def simulate_life_path(
     *,
     expected_return_risky: float,
     std_dev_return_risky: float,
-    risk_free_rate: float,    
+    risk_free_rate: float,
     pref: Preferences,
     a: Assets,
     social_security: float,
-    time_horizon: int,  # maximum number of years we will live from current age. Can set this to very large numbers.
+    time_horizon_max: int,  # maximum number of years we will live from current age. Can set this to very large numbers.
     rng_seed: int | None = None,
     rng_seed_offset: int | None = None,
     starting_age: int = 65,
     is_male: bool = False,
-    with_survival_probabilities: bool = True,
+    with_longevity_uncertainty: bool = True,
     returns_distribution_type: DistributionType = DistributionType.NORMAL,
 ) -> dict[int, State]:
     if rng_seed_offset is not None and rng_seed is not None:
         np.random.seed(rng_seed_offset + rng_seed)
+
     if is_male:
         age_to_death_probability = age_to_death_probability_male
+        age_to_life_expectancy = age_to_life_expectancy_male
     else:
         age_to_death_probability = age_to_death_probability_female
-    
+        age_to_life_expectancy = age_to_life_expectancy_female
 
     ra = RiskyAsset(
         expected_return=expected_return_risky,
@@ -78,7 +82,7 @@ def simulate_life_path(
         )
     }
 
-    for t in range(1, time_horizon + 1):
+    for t in range(1, time_horizon_max + 1):
         age = starting_age + t
         gamma = wealth_to_gamma(
             a.total_wealth_inflation_adjusted(t),
@@ -88,7 +92,7 @@ def simulate_life_path(
         )
 
         if (
-            with_survival_probabilities
+            with_longevity_uncertainty
             and np.random.rand() < age_to_death_probability[age]
         ):  # He's dead, Jim.
             alive = False
@@ -117,9 +121,14 @@ def simulate_life_path(
         # 1) Income from social security. Let's assume it has to go into the taxable account.
         a.taxable += social_security
 
+        time_horizon = (
+            age_to_life_expectancy[age]
+            if with_longevity_uncertainty
+            else time_horizon_max - t + 1
+        )
         # 2) Decide policy
         pol = policy(
-            time_horizon=time_horizon - t + 1,
+            time_horizon=time_horizon,
             bequest_param=pref.bequest_param,
             gamma=gamma,
             pref=pref,
@@ -127,12 +136,14 @@ def simulate_life_path(
             risky_asset=ra,
         )
 
-        # 3) Use policy to decide how much to consume        
+        # 3) Use policy to decide how much to consume
 
-        desired_consumption_from_portfolio_pre_tax = pol.consumption_fraction * a.total_wealth
+        desired_consumption_from_portfolio_pre_tax = (
+            pol.consumption_fraction * a.total_wealth
+        )
         actual_consumption_from_portfolio_post_tax = a.consume(
             desired_consumption_from_portfolio_pre_tax
-        )       
+        )
 
         consumption_from_portfolio_post_tax_post_inflation = (
             actual_consumption_from_portfolio_post_tax * a.inflation_discount_factor(t)

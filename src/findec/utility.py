@@ -72,6 +72,8 @@ def composite_crra_utility(
 def bequest_utility(wealth, b=10, gamma=2.0):
     if wealth <= 0:
         return 0.0  # or negative utility, but typically 0 is fine if no wealth
+    if b == 0:
+        return 0.0
     return b * (1 - (wealth / b) ** (1 - gamma)) / (gamma - 1)
 
 
