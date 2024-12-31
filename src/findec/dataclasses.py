@@ -24,10 +24,19 @@ class Assets:
     tax_free: float
     taxable: float  # e.g. a stocks and shares ISA (Roth IRA in US)
     tax_rate: float  # e.g. capital gains on a stocks/shares account
+    inflation_rate: float
 
     @property
-    def total_wealth(self):
+    def total_wealth(self) -> float:
         return self.tax_free + self.taxable
+
+    def inflation_discount_factor(self, years_from_now: float) -> float:
+        return (1 - self.inflation_rate) ** years_from_now
+
+    def total_wealth_inflation_adjusted(self, years_from_now: float) -> float:
+        return (self.tax_free + self.taxable) * self.inflation_discount_factor(
+            years_from_now
+        )
 
     def consume(self, amount: float) -> float:
         """Consume first from the taxable account, then consume from the tax-free account.
@@ -55,12 +64,16 @@ class State:
     alive: bool
     tax_free: float
     taxable: float
+    portfolio_value_post_inflation: float | None
     risky_return: float | None
-    consumption: float | None
-    consumption_fraction: float | None
+    consumption_pre_tax: float | None
+    consumption_post_tax: float | None
+    consumption_post_tax_post_inflation: float | None
+    consumption_fraction: float | None    
     total_utility: float
+    total_consumption: float
     annual_utility: float | None
-    bequest: float | None
+    bequest_post_inflation: float | None
 
     def as_dict(self):
         return asdict(self)

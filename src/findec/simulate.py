@@ -31,6 +31,7 @@ def simulate_life_path(
     expected_return_risky: float,
     std_dev_return_risky: float,
     risk_free_rate: float,
+    inflation_rate: float,
     pref: Preferences,
     a: Assets,
     social_security: float,
@@ -49,7 +50,7 @@ def simulate_life_path(
     else:
         age_to_death_probability = age_to_death_probability_female
 
-    expected_excess_return = expected_return_risky - risk_free_rate
+    expected_excess_return = expected_return_risky - risk_free_rate - inflation_rate 
     ra = RiskyAsset(
         expected_excess_return=expected_excess_return,
         standard_deviation=std_dev_return_risky,
@@ -64,21 +65,25 @@ def simulate_life_path(
         starting_age: State(
             tax_free=a.tax_free,
             taxable=a.taxable,
+            portfolio_value_post_inflation=a.total_wealth_inflation_adjusted(0),
             total_utility=total_utility,
+            total_consumption=total_consumption,
             alive=alive,
             age=starting_age,
-            consumption=None,
+            consumption_pre_tax=None,
+            consumption_post_tax=None,
             consumption_fraction=None,
+            consumption_post_tax_post_inflation=None,
             risky_return=None,
             annual_utility=None,
-            bequest=None,
+            bequest_post_inflation=None,
         )
     }
 
     for t in range(1, time_horizon + 1):
         age = starting_age + t
         gamma = wealth_to_gamma(
-            a.total_wealth,
+            a.total_wealth_inflation_adjusted(t),
             subsistence=pref.subsistence,
             gamma_below_subsistence=pref.gamma_below_subsistence,
             gamma_above_subsistence=pref.gamma_above_subsistence,
@@ -87,23 +92,27 @@ def simulate_life_path(
         if (
             with_survival_probabilities
             and np.random.rand() < age_to_death_probability[age]
-        ):
+        ):  # He's dead, Jim.
             alive = False
-            bu = bequest_utility(a.total_wealth, b=pref.bequest_param, gamma=gamma) / (
-                (1 + pref.rate_time_preference) ** t
-            )
+            bu = bequest_utility(
+                a.total_wealth_inflation_adjusted(t), b=pref.bequest_param, gamma=gamma
+            ) / ((1 + pref.rate_time_preference) ** t)
             total_utility += bu
             states[age] = State(
                 tax_free=a.tax_free,
                 taxable=a.taxable,
                 total_utility=total_utility,
+                total_consumption=total_consumption,
                 alive=alive,
                 age=age,
-                consumption=None,
+                consumption_pre_tax=None,
+                consumption_post_tax=None,
+                consumption_post_tax_post_inflation=None,
                 consumption_fraction=None,
+                portfolio_value_post_inflation=a.total_wealth_inflation_adjusted(t),
                 risky_return=None,
                 annual_utility=bu,
-                bequest=a.total_wealth,
+                bequest_post_inflation=a.total_wealth_inflation_adjusted(t),
             )
             break
 
@@ -121,13 +130,32 @@ def simulate_life_path(
         )
 
         # 3) Use policy to decide how much to consume
-        consumption_from_portfolio = a.consume(
-            pol.consumption_fraction * a.total_wealth
+        total_wealth_before_consumption = a.total_wealth
+
+        consumption_from_portfolio_pre_tax = pol.consumption_fraction * a.total_wealth
+        consumption_from_portfolio_post_tax = a.consume(
+            consumption_from_portfolio_pre_tax
         )
-        total_consumption += consumption_from_portfolio
+
+        # conservation of money
+        if (
+            abs(
+                total_wealth_before_consumption
+                - (a.total_wealth + consumption_from_portfolio_pre_tax)
+            )
+            > 1e-2
+        ):
+            raise ValueError("Money not conserved!")
+
+        consumption_from_portfolio_post_tax_post_inflation = (
+            consumption_from_portfolio_post_tax * a.inflation_discount_factor(t)
+        )
+        total_consumption += consumption_from_portfolio_post_tax_post_inflation
 
         # 4) Compute immediate utility from consumption
-        utility_of_consumption = crra_utility(consumption_from_portfolio, gamma=gamma)
+        utility_of_consumption = crra_utility(
+            consumption_from_portfolio_post_tax_post_inflation, gamma=gamma
+        )
         discounted_utility_of_consumption = utility_of_consumption / (
             (1 + pref.rate_time_preference) ** t
         )
@@ -154,35 +182,43 @@ def simulate_life_path(
         states[age] = State(
             tax_free=a.tax_free,
             taxable=a.taxable,
+            portfolio_value_post_inflation=a.total_wealth_inflation_adjusted(t),
             total_utility=total_utility,
+            total_consumption=total_consumption,
             alive=alive,
             age=age,
-            consumption=consumption_from_portfolio,
+            consumption_pre_tax=consumption_from_portfolio_pre_tax,
+            consumption_post_tax=consumption_from_portfolio_post_tax,
+            consumption_post_tax_post_inflation=consumption_from_portfolio_post_tax_post_inflation,
             consumption_fraction=pol.consumption_fraction,
             risky_return=risky_returns,
             annual_utility=discounted_utility_of_consumption,
-            bequest=None,
+            bequest_post_inflation=None,
         )
         # End of year. Next loop.
 
     if alive:
         # final bequest
-        bu = bequest_utility(a.total_wealth, b=pref.bequest_param, gamma=gamma) / (
-            (1 + pref.rate_time_preference) ** t
-        )
+        bu = bequest_utility(
+            a.total_wealth_inflation_adjusted(t), b=pref.bequest_param, gamma=gamma
+        ) / ((1 + pref.rate_time_preference) ** t)
         total_utility += bu
 
         states[age] = State(
             tax_free=a.tax_free,
             taxable=a.taxable,
+            portfolio_value_post_inflation=a.total_wealth_inflation_adjusted(t),
             total_utility=total_utility,
+            total_consumption=total_consumption,
             alive=alive,
             age=age,
-            consumption=consumption_from_portfolio,
+            consumption_pre_tax=consumption_from_portfolio_pre_tax,
+            consumption_post_tax=consumption_from_portfolio_post_tax,
+            consumption_post_tax_post_inflation=consumption_from_portfolio_post_tax_post_inflation,
             consumption_fraction=pol.consumption_fraction,
             risky_return=risky_returns,
             annual_utility=bu + discounted_utility_of_consumption,
-            bequest=a.total_wealth,
+            bequest_post_inflation=a.total_wealth_inflation_adjusted(t),
         )
 
     return states
