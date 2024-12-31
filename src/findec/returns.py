@@ -53,6 +53,7 @@ class RiskyAsset:
                 scale=self.standard_deviation,
                 size=n_draws,
             )
+            draws = np.maximum(-1, draws)
         if n_draws == 1:
             return float(draws[0])
         return draws

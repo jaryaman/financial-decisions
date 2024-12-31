@@ -89,7 +89,9 @@ def simulate_life_path(
             and np.random.rand() < age_to_death_probability[age]
         ):
             alive = False
-            bu = bequest_utility(a.total_wealth, b=pref.bequest_param, gamma=gamma)
+            bu = bequest_utility(a.total_wealth, b=pref.bequest_param, gamma=gamma) / (
+                (1 + pref.rate_time_preference) ** t
+            )
             total_utility += bu
             states[age] = State(
                 tax_free=a.tax_free,
@@ -165,7 +167,9 @@ def simulate_life_path(
 
     if alive:
         # final bequest
-        bu = bequest_utility(a.total_wealth, b=pref.bequest_param, gamma=gamma)
+        bu = bequest_utility(a.total_wealth, b=pref.bequest_param, gamma=gamma) / (
+            (1 + pref.rate_time_preference) ** t
+        )
         total_utility += bu
 
         states[age] = State(
