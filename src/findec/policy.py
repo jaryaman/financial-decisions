@@ -17,17 +17,19 @@ def policy(
     risky_asset: RiskyAsset,
     bequest_param: float | None,
 ) -> Policy:
-    risky_asset_fraction_allocation = merton_share(
-        expected_excess_return=risky_asset.expected_return - risk_free_rate,
-        std_dev_return=risky_asset.standard_deviation,
+    mu = risky_asset.expected_return - risk_free_rate
+    sigma = risky_asset.standard_deviation
+    k = merton_share(
+        expected_excess_return=mu,
+        std_dev_return=sigma,
         gamma=gamma,
     )
 
     return_risk_adjusted_portfolio = risk_free_rate + risk_adjusted_excess_return(
-        expected_excess_return=risky_asset.expected_return - risk_free_rate,
-        std_dev_return=risky_asset.standard_deviation,
+        expected_excess_return=mu,
+        std_dev_return=sigma,
         gamma=gamma,
-        frac_risky_asset=risky_asset_fraction_allocation,
+        frac_risky_asset=k,
     )
 
     consumption_fraction = optimal_consumption_finite_horizon(
@@ -40,6 +42,6 @@ def policy(
 
     return Policy(
         consumption_fraction=consumption_fraction,
-        risky_asset_fraction_tax_free=risky_asset_fraction_allocation,
-        risky_asset_fraction_taxable=risky_asset_fraction_allocation,
+        risky_asset_fraction_tax_free=k,
+        risky_asset_fraction_taxable=k,
     )

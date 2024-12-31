@@ -68,8 +68,8 @@ def simulate_life_path(
             total_consumption=total_consumption,
             alive=alive,
             age=starting_age,
-            consumption_pre_tax=None,
-            consumption_post_tax=None,
+            desired_consumption_pre_tax=None,
+            actual_consumption_post_tax=None,
             consumption_fraction=None,
             consumption_post_tax_post_inflation=None,
             risky_return=None,
@@ -103,8 +103,8 @@ def simulate_life_path(
                 total_consumption=total_consumption,
                 alive=alive,
                 age=age,
-                consumption_pre_tax=None,
-                consumption_post_tax=None,
+                desired_consumption_pre_tax=None,
+                actual_consumption_post_tax=None,
                 consumption_post_tax_post_inflation=None,
                 consumption_fraction=None,
                 portfolio_value_post_inflation=a.total_wealth_inflation_adjusted(t),
@@ -127,26 +127,15 @@ def simulate_life_path(
             risky_asset=ra,
         )
 
-        # 3) Use policy to decide how much to consume
-        total_wealth_before_consumption = a.total_wealth
+        # 3) Use policy to decide how much to consume        
 
-        consumption_from_portfolio_pre_tax = pol.consumption_fraction * a.total_wealth
-        consumption_from_portfolio_post_tax = a.consume(
-            consumption_from_portfolio_pre_tax
-        )
-
-        # conservation of money
-        if (
-            abs(
-                total_wealth_before_consumption
-                - (a.total_wealth + consumption_from_portfolio_pre_tax)
-            )
-            > 1e-2
-        ):
-            raise ValueError("Money not conserved!")
+        desired_consumption_from_portfolio_pre_tax = pol.consumption_fraction * a.total_wealth
+        actual_consumption_from_portfolio_post_tax = a.consume(
+            desired_consumption_from_portfolio_pre_tax
+        )       
 
         consumption_from_portfolio_post_tax_post_inflation = (
-            consumption_from_portfolio_post_tax * a.inflation_discount_factor(t)
+            actual_consumption_from_portfolio_post_tax * a.inflation_discount_factor(t)
         )
         total_consumption += consumption_from_portfolio_post_tax_post_inflation
 
@@ -185,8 +174,8 @@ def simulate_life_path(
             total_consumption=total_consumption,
             alive=alive,
             age=age,
-            consumption_pre_tax=consumption_from_portfolio_pre_tax,
-            consumption_post_tax=consumption_from_portfolio_post_tax,
+            desired_consumption_pre_tax=desired_consumption_from_portfolio_pre_tax,
+            actual_consumption_post_tax=actual_consumption_from_portfolio_post_tax,
             consumption_post_tax_post_inflation=consumption_from_portfolio_post_tax_post_inflation,
             consumption_fraction=pol.consumption_fraction,
             risky_return=risky_returns,
@@ -210,8 +199,8 @@ def simulate_life_path(
             total_consumption=total_consumption,
             alive=alive,
             age=age,
-            consumption_pre_tax=consumption_from_portfolio_pre_tax,
-            consumption_post_tax=consumption_from_portfolio_post_tax,
+            desired_consumption_pre_tax=desired_consumption_from_portfolio_pre_tax,
+            actual_consumption_post_tax=actual_consumption_from_portfolio_post_tax,
             consumption_post_tax_post_inflation=consumption_from_portfolio_post_tax_post_inflation,
             consumption_fraction=pol.consumption_fraction,
             risky_return=risky_returns,

@@ -66,8 +66,8 @@ class State:
     taxable: float
     portfolio_value_post_inflation: float | None
     risky_return: float | None
-    consumption_pre_tax: float | None
-    consumption_post_tax: float | None
+    desired_consumption_pre_tax: float | None
+    actual_consumption_post_tax: float | None
     consumption_post_tax_post_inflation: float | None
     consumption_fraction: float | None    
     total_utility: float
