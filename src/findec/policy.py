@@ -18,13 +18,13 @@ def policy(
     bequest_param: float | None,
 ) -> Policy:
     risky_asset_fraction_allocation = merton_share(
-        expected_excess_return=risky_asset.expected_excess_return,
+        expected_excess_return=risky_asset.expected_return - risk_free_rate,
         std_dev_return=risky_asset.standard_deviation,
         gamma=gamma,
     )
 
     return_risk_adjusted_portfolio = risk_free_rate + risk_adjusted_excess_return(
-        expected_excess_return=risky_asset.expected_excess_return,
+        expected_excess_return=risky_asset.expected_return - risk_free_rate,
         std_dev_return=risky_asset.standard_deviation,
         gamma=gamma,
         frac_risky_asset=risky_asset_fraction_allocation,

@@ -35,21 +35,20 @@ def draw_lognormal_return(
 
 @dataclass
 class RiskyAsset:
-    expected_excess_return: float
+    expected_return: float
     standard_deviation: float
-    risk_free_rate: float
     distribution_type: DistributionType = DistributionType.LOG_NORMAL
 
     def draw(self, n_draws: int = 1) -> float | np.ndarray:
         if self.distribution_type == DistributionType.LOG_NORMAL:
             draws = draw_lognormal_return(
-                self.risk_free_rate + self.expected_excess_return,
+                self.expected_return,
                 self.standard_deviation,
                 n_sims=n_draws,
             )
         elif self.distribution_type == DistributionType.NORMAL:
             draws = np.random.normal(
-                loc=self.risk_free_rate + self.expected_excess_return,
+                loc=self.expected_return,
                 scale=self.standard_deviation,
                 size=n_draws,
             )

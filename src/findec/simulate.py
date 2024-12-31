@@ -30,8 +30,7 @@ def simulate_life_path(
     *,
     expected_return_risky: float,
     std_dev_return_risky: float,
-    risk_free_rate: float,
-    inflation_rate: float,
+    risk_free_rate: float,    
     pref: Preferences,
     a: Assets,
     social_security: float,
@@ -49,12 +48,11 @@ def simulate_life_path(
         age_to_death_probability = age_to_death_probability_male
     else:
         age_to_death_probability = age_to_death_probability_female
+    
 
-    expected_excess_return = expected_return_risky - risk_free_rate - inflation_rate 
     ra = RiskyAsset(
-        expected_excess_return=expected_excess_return,
+        expected_return=expected_return_risky,
         standard_deviation=std_dev_return_risky,
-        risk_free_rate=risk_free_rate,
         distribution_type=returns_distribution_type,
     )
 
