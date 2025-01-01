@@ -37,7 +37,7 @@ def simulate_life_path(
     risk_free_rate: float,
     tax_rate: float,
     pref: Preferences,
-    a: Assets,
+    assets: Assets,
     social_security: float,
     time_horizon_max: int,  # maximum number of years we will live from current age. Can set this to very large numbers.
     rng_seed: int | None = None,
@@ -68,9 +68,9 @@ def simulate_life_path(
     alive = True
     states = {
         starting_age: State(
-            tax_free=a.tax_free,
-            taxable=a.taxable,
-            portfolio_value_post_inflation=a.total_wealth_inflation_adjusted(0),
+            tax_free=assets.tax_free,
+            taxable=assets.taxable,
+            portfolio_value_post_inflation=assets.total_wealth_inflation_adjusted(0),
             total_utility=total_utility,
             total_consumption=total_consumption,
             alive=alive,
@@ -88,7 +88,7 @@ def simulate_life_path(
     for t in range(1, time_horizon_max + 1):
         age = starting_age + t
         gamma = wealth_to_gamma(
-            a.total_wealth_inflation_adjusted(t),
+            assets.total_wealth_inflation_adjusted(t),
             subsistence=pref.subsistence,
             gamma_below_subsistence=pref.gamma_below_subsistence,
             gamma_above_subsistence=pref.gamma_above_subsistence,
@@ -100,12 +100,12 @@ def simulate_life_path(
         ):  # He's dead, Jim.
             alive = False
             bu = bequest_utility(
-                a.total_wealth_inflation_adjusted(t), b=pref.bequest_param, gamma=gamma
+                assets.total_wealth_inflation_adjusted(t), b=pref.bequest_param, gamma=gamma
             ) / ((1 + pref.rate_time_preference) ** t)
             total_utility += bu
             states[age] = State(
-                tax_free=a.tax_free,
-                taxable=a.taxable,
+                tax_free=assets.tax_free,
+                taxable=assets.taxable,
                 total_utility=total_utility,
                 total_consumption=total_consumption,
                 alive=alive,
@@ -114,15 +114,15 @@ def simulate_life_path(
                 actual_consumption_post_tax=None,
                 consumption_post_tax_post_inflation=None,
                 consumption_fraction=None,
-                portfolio_value_post_inflation=a.total_wealth_inflation_adjusted(t),
+                portfolio_value_post_inflation=assets.total_wealth_inflation_adjusted(t),
                 risky_return=None,
                 annual_utility=bu,
-                bequest_post_inflation=a.total_wealth_inflation_adjusted(t),
+                bequest_post_inflation=assets.total_wealth_inflation_adjusted(t),
             )
             break
 
         # 1) Income from social security. Let's assume it has to go into the taxable account.
-        a.invest_in_taxable(social_security)
+        assets.invest_in_taxable(social_security)
 
         time_horizon = (
             age_to_life_expectancy[age]
@@ -142,7 +142,7 @@ def simulate_life_path(
 
         # 3) Grow assets
         risky_returns = float(ra.draw())
-        a.grow(
+        assets.grow(
             risk_free_rate=risk_free_rate,
             risky_returns=risky_returns,
             risky_asset_fraction=pol.risky_asset_fraction,
@@ -150,16 +150,16 @@ def simulate_life_path(
 
         # 4) Use policy to decide how much to consume
         desired_consumption_from_portfolio_pre_tax = (
-            pol.consumption_fraction * a.total_wealth
+            pol.consumption_fraction * assets.total_wealth
         )
 
         # 5) Consume from assets
         actual_consumption_from_portfolio_post_tax = consume_from_assets(
-            fractional_consumption=pol.consumption_fraction, assets=a, tax_rate=tax_rate
+            fractional_consumption=pol.consumption_fraction, assets=assets, tax_rate=tax_rate
         )
 
         actual_consumption_from_portfolio_post_tax_post_inflation = (
-            actual_consumption_from_portfolio_post_tax * a.inflation_discount_factor(t)
+            actual_consumption_from_portfolio_post_tax * assets.inflation_discount_factor(t)
         )
         total_consumption += actual_consumption_from_portfolio_post_tax_post_inflation
 
@@ -175,9 +175,9 @@ def simulate_life_path(
 
         # 5) Store state
         states[age] = State(
-            tax_free=a.tax_free,
-            taxable=a.taxable,
-            portfolio_value_post_inflation=a.total_wealth_inflation_adjusted(t),
+            tax_free=assets.tax_free,
+            taxable=assets.taxable,
+            portfolio_value_post_inflation=assets.total_wealth_inflation_adjusted(t),
             total_utility=total_utility,
             total_consumption=total_consumption,
             alive=alive,
@@ -195,14 +195,14 @@ def simulate_life_path(
     if alive:
         # final bequest
         bu = bequest_utility(
-            a.total_wealth_inflation_adjusted(t), b=pref.bequest_param, gamma=gamma
+            assets.total_wealth_inflation_adjusted(t), b=pref.bequest_param, gamma=gamma
         ) / ((1 + pref.rate_time_preference) ** t)
         total_utility += bu
 
         states[age] = State(
-            tax_free=a.tax_free,
-            taxable=a.taxable,
-            portfolio_value_post_inflation=a.total_wealth_inflation_adjusted(t),
+            tax_free=assets.tax_free,
+            taxable=assets.taxable,
+            portfolio_value_post_inflation=assets.total_wealth_inflation_adjusted(t),
             total_utility=total_utility,
             total_consumption=total_consumption,
             alive=alive,
@@ -213,7 +213,7 @@ def simulate_life_path(
             consumption_fraction=pol.consumption_fraction,
             risky_return=risky_returns,
             annual_utility=bu + discounted_utility_of_consumption,
-            bequest_post_inflation=a.total_wealth_inflation_adjusted(t),
+            bequest_post_inflation=assets.total_wealth_inflation_adjusted(t),
         )
 
     return states
