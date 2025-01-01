@@ -2,11 +2,13 @@ import numpy as np
 import polars as pl
 import copy
 
+from findec.assets import Assets
 from findec.utility import crra_utility
 from findec.utility import wealth_to_gamma, bequest_utility
 from findec.policy import policy
-from findec.dataclasses import Preferences, Assets, State
+from findec.dataclasses import Preferences, State
 from findec.returns import RiskyAsset, DistributionType
+from findec.consumption import consume_from_assets
 from findec.survival import (
     age_to_death_probability_female,
     age_to_death_probability_male,
@@ -33,6 +35,7 @@ def simulate_life_path(
     expected_return_risky: float,
     std_dev_return_risky: float,
     risk_free_rate: float,
+    tax_rate: float,
     pref: Preferences,
     a: Assets,
     social_security: float,
@@ -119,13 +122,14 @@ def simulate_life_path(
             break
 
         # 1) Income from social security. Let's assume it has to go into the taxable account.
-        a.taxable += social_security
+        a.invest_in_taxable(social_security)
 
         time_horizon = (
             age_to_life_expectancy[age]
             if with_longevity_uncertainty
             else time_horizon_max - t + 1
         )
+
         # 2) Decide policy
         pol = policy(
             time_horizon=time_horizon,
@@ -136,47 +140,40 @@ def simulate_life_path(
             risky_asset=ra,
         )
 
-        # 3) Use policy to decide how much to consume
+        # 3) Grow assets
+        risky_returns = float(ra.draw())
+        a.grow(
+            risk_free_rate=risk_free_rate,
+            risky_returns=risky_returns,
+            risky_asset_fraction=pol.risky_asset_fraction,
+        )
 
+        # 4) Use policy to decide how much to consume
         desired_consumption_from_portfolio_pre_tax = (
             pol.consumption_fraction * a.total_wealth
         )
-        actual_consumption_from_portfolio_post_tax = a.consume(
-            desired_consumption_from_portfolio_pre_tax
+
+        # 5) Consume from assets
+        actual_consumption_from_portfolio_post_tax = consume_from_assets(
+            fractional_consumption=pol.consumption_fraction, assets=a, tax_rate=tax_rate
         )
 
-        consumption_from_portfolio_post_tax_post_inflation = (
+        actual_consumption_from_portfolio_post_tax_post_inflation = (
             actual_consumption_from_portfolio_post_tax * a.inflation_discount_factor(t)
         )
-        total_consumption += consumption_from_portfolio_post_tax_post_inflation
+        total_consumption += actual_consumption_from_portfolio_post_tax_post_inflation
 
         # 4) Compute immediate utility from consumption
         utility_of_consumption = crra_utility(
-            consumption_from_portfolio_post_tax_post_inflation, gamma=gamma
+            actual_consumption_from_portfolio_post_tax_post_inflation, gamma=gamma
         )
+
         discounted_utility_of_consumption = utility_of_consumption / (
             (1 + pref.rate_time_preference) ** t
         )
         total_utility += discounted_utility_of_consumption
 
-        # 5) Invest remainder in safe/risky assets
-
-        taxable_risky = pol.risky_asset_fraction_taxable * a.taxable
-        taxable_safe = a.taxable - taxable_risky
-
-        tax_free_risky = pol.risky_asset_fraction_tax_free * a.tax_free
-        tax_free_safe = a.tax_free - tax_free_risky
-
-        risky_returns = float(ra.draw())
-
-        taxable_risky_next = taxable_risky * (1 + risky_returns)
-        tax_free_risky_next = tax_free_risky * (1 + risky_returns)
-        taxable_safe_next = taxable_safe * (1 + risk_free_rate)
-        tax_free_safe_next = tax_free_safe * (1 + risk_free_rate)
-
-        a.taxable = taxable_risky_next + taxable_safe_next
-        a.tax_free = tax_free_risky_next + tax_free_safe_next
-
+        # 5) Store state
         states[age] = State(
             tax_free=a.tax_free,
             taxable=a.taxable,
@@ -187,7 +184,7 @@ def simulate_life_path(
             age=age,
             desired_consumption_pre_tax=desired_consumption_from_portfolio_pre_tax,
             actual_consumption_post_tax=actual_consumption_from_portfolio_post_tax,
-            consumption_post_tax_post_inflation=consumption_from_portfolio_post_tax_post_inflation,
+            consumption_post_tax_post_inflation=actual_consumption_from_portfolio_post_tax_post_inflation,
             consumption_fraction=pol.consumption_fraction,
             risky_return=risky_returns,
             annual_utility=discounted_utility_of_consumption,
@@ -212,7 +209,7 @@ def simulate_life_path(
             age=age,
             desired_consumption_pre_tax=desired_consumption_from_portfolio_pre_tax,
             actual_consumption_post_tax=actual_consumption_from_portfolio_post_tax,
-            consumption_post_tax_post_inflation=consumption_from_portfolio_post_tax_post_inflation,
+            consumption_post_tax_post_inflation=actual_consumption_from_portfolio_post_tax_post_inflation,
             consumption_fraction=pol.consumption_fraction,
             risky_return=risky_returns,
             annual_utility=bu + discounted_utility_of_consumption,

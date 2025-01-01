@@ -42,6 +42,5 @@ def policy(
 
     return Policy(
         consumption_fraction=consumption_fraction,
-        risky_asset_fraction_tax_free=k,
-        risky_asset_fraction_taxable=k,
+        risky_asset_fraction=k,
     )
