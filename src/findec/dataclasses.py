@@ -23,6 +23,7 @@ class State:
     alive: bool
     tax_free: float
     taxable: float
+    taxable_basis: float
     portfolio_value_post_inflation: float | None
     risky_return: float | None
     desired_consumption_pre_tax: float | None

@@ -106,6 +106,7 @@ def simulate_life_path(
             states[age] = State(
                 tax_free=assets.tax_free,
                 taxable=assets.taxable,
+                taxable_basis=assets.taxable_basis,
                 total_utility=total_utility,
                 total_consumption=total_consumption,
                 alive=alive,
@@ -177,6 +178,7 @@ def simulate_life_path(
         states[age] = State(
             tax_free=assets.tax_free,
             taxable=assets.taxable,
+            taxable_basis=assets.taxable_basis,
             portfolio_value_post_inflation=assets.total_wealth_inflation_adjusted(t),
             total_utility=total_utility,
             total_consumption=total_consumption,
@@ -202,6 +204,7 @@ def simulate_life_path(
         states[age] = State(
             tax_free=assets.tax_free,
             taxable=assets.taxable,
+            taxable_basis=assets.taxable_basis,
             portfolio_value_post_inflation=assets.total_wealth_inflation_adjusted(t),
             total_utility=total_utility,
             total_consumption=total_consumption,
