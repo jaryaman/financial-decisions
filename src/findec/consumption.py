@@ -50,7 +50,7 @@ def consume_from_taxable_assets(
     assets.taxable -= withdrawal
     assets.taxable_basis = assets.taxable_basis * (1 - frac_sold)
 
-    if abs(initial_taxable_assets - net_consumption - tax_owed) > 1e-8:
+    if abs(withdrawal - net_consumption - tax_owed) > 1e-8:
         raise ValueError(
             f"Money not conserved! initial_taxable_assets={initial_taxable_assets}; net_consumption={net_consumption}; tax_owed={tax_owed}"
         )
