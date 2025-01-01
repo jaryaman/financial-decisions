@@ -1,5 +1,11 @@
 from dataclasses import dataclass
 import numpy as np
+from enum import Enum, auto
+
+
+class DistributionType(Enum):
+    NORMAL = auto()
+    LOG_NORMAL = auto()
 
 
 # Got this from chatGPT, but looks sensible. Think more later.
@@ -29,16 +35,24 @@ def draw_lognormal_return(
 
 @dataclass
 class RiskyAsset:
-    expected_excess_return: float
+    expected_return: float
     standard_deviation: float
-    risk_free_rate: float
+    distribution_type: DistributionType = DistributionType.LOG_NORMAL
 
     def draw(self, n_draws: int = 1) -> float | np.ndarray:
-        draws = draw_lognormal_return(
-            self.risk_free_rate + self.expected_excess_return,
-            self.standard_deviation,
-            n_sims=n_draws,
-        )
+        if self.distribution_type == DistributionType.LOG_NORMAL:
+            draws = draw_lognormal_return(
+                self.expected_return,
+                self.standard_deviation,
+                n_sims=n_draws,
+            )
+        elif self.distribution_type == DistributionType.NORMAL:
+            draws = np.random.normal(
+                loc=self.expected_return,
+                scale=self.standard_deviation,
+                size=n_draws,
+            )
+            draws = np.maximum(-1, draws)
         if n_draws == 1:
             return float(draws[0])
         return draws
