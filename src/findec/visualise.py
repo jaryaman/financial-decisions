@@ -7,7 +7,7 @@ QUANTILES_DEFAULT = [0.25, 0.5, 0.75]
 
 
 def quantile_lineplot(
-    data: pl.DataFrame, *, x: str, y: str, quantiles: list[float] | None = None
+    data: pl.DataFrame, *, x: str, y: str, quantiles: list[float] | None = None, ax: Axes | None = None
 ) -> Axes:
     if quantiles is None:
         quantiles = QUANTILES_DEFAULT
@@ -22,7 +22,8 @@ def quantile_lineplot(
     central_quantile = quantiles[1]
     upper_quantile = quantiles[2]
 
-    _, ax = plt.subplots()
+    if ax is None:
+        _, ax = plt.subplots()
     ax.plot(
         df_q[x],
         df_q[f"q_{central_quantile:.2f}"],
